@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastmcp import FastMCP
 from loguru import logger
 
 from app.config import config
@@ -70,6 +71,16 @@ app.mount(
 
 public_dir = utils.public_dir()
 app.mount("/", StaticFiles(directory=public_dir, html=True), name="")
+
+mcp = FastMCP.from_fastapi(app=app, name="MoneyPrinterTurbo-MCP").http_app(path="/mcp")
+app = FastAPI(
+    title=app.title,
+    routes=[
+        *mcp.routes,  # MCP routes
+        *app.routes,  # Original API routes
+    ],
+    lifespan=mcp.lifespan,
+)
 
 
 @app.on_event("shutdown")
